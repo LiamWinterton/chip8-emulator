@@ -18,3 +18,22 @@ pub struct Emu {
     dt: u8,
     st: u8,
 }
+
+const START_ADDR: u16 = 0x200;
+
+impl Emu {
+    pub fn new() -> Self {
+        Self {
+            pc: START_ADDR,
+            ram: [0; RAM_SIZE],
+            screen: [false; SCREEN_WIDTH * SCREEN_HEIGHT],
+            v_reg: [0; NUM_REG],
+            i_reg: 0,
+            sp: 0,
+            stack: [0; STACK_SIZE],
+            keys: [false; NUM_KEYS],
+            dt: 0,
+            st: 0,
+        }
+    }
+}
