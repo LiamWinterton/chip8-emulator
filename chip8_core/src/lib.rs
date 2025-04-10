@@ -36,4 +36,18 @@ impl Emu {
             st: 0,
         }
     }
+    
+    // Adds the given u16 value to the top of the stack
+    fn push(&mut self, value: u16) {
+        self.stack[self.sp as usize] = value;
+
+        self.sp += 1;
+    }
+    
+    // Returns the value at the top of the stack
+    fn pop(&mut self) -> u16 {
+        self.sp -= 1;
+
+        self.stack[self.sp as usize]
+    }
 }
