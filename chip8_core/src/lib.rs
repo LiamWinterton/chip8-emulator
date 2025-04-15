@@ -16,9 +16,8 @@ const FONTSET: [u8; FONTSET_SIZE] = [
     0xF0, 0x80, 0x80, 0x80, 0xF0, // C
     0xE0, 0x90, 0x90, 0x90, 0xE0, // D
     0xF0, 0x80, 0xF0, 0x80, 0xF0, // E
-    0xF0, 0x80, 0xF0, 0x80, 0x80 // F
+    0xF0, 0x80, 0xF0, 0x80, 0x80, // F
 ];
-
 
 pub const SCREEN_WIDTH: usize = 64;
 pub const SCREEN_HEIGHT: usize = 32;
@@ -77,14 +76,28 @@ impl Emu {
         self.st = 0;
         self.ram[..FONTSET_SIZE].copy_from_slice(&FONTSET);
     }
-    
+
+    // Runs the whole damn thing
+    pub fn tick(&mut self) {
+        // Fetch instruction to run
+        let op = self.fetch();
+
+        // Decode instruction
+
+        // Execute decoded instruction
+    }
+
+    fn fetch(&mut self) -> u16 {
+        // TODO: Fetch the next instruction to perform
+    }
+
     // Adds the given u16 value to the top of the stack
     fn push(&mut self, value: u16) {
         self.stack[self.sp as usize] = value;
 
         self.sp += 1;
     }
-    
+
     // Returns the value at the top of the stack
     fn pop(&mut self) -> u16 {
         self.sp -= 1;
