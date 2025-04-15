@@ -89,6 +89,16 @@ impl Emu {
 
     fn fetch(&mut self) -> u16 {
         // TODO: Fetch the next instruction to perform
+        let higher_byte = self.ram[self.pc as usize] as u16;
+        let lower_byte = self.ram[(self.pc + 1) as usize] as u16;
+
+        // Convert our two byte instructions into a single 16-bit variable to be parsed
+        let op = (higher_byte << 8) | lower_byte;
+
+        // Increment our counter for the next tick
+        self.pc += 2;
+
+        op
     }
 
     // Adds the given u16 value to the top of the stack
