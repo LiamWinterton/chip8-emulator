@@ -101,6 +101,21 @@ impl Emu {
         op
     }
 
+    // Tick Timers
+    pub fn tick_timers(&mut self) {
+        // Decrement Delay Timer if it has a value
+        if self.dt > 0 {
+            self.dt -= 1;
+        }
+
+        // Decrement Sound Timber if it has a value + Play sound
+        if self.st == 1 {
+            // Play sound
+        }
+
+        self.st -= 1;
+    }
+
     // Adds the given u16 value to the top of the stack
     fn push(&mut self, value: u16) {
         self.stack[self.sp as usize] = value;
