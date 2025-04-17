@@ -82,9 +82,8 @@ impl Emu {
         // Fetch instruction to run
         let op = self.fetch();
 
-        // Decode instruction
-
-        // Execute decoded instruction
+        // Decode & Execute decoded instruction
+        self.execute(op);
     }
 
     fn fetch(&mut self) -> u16 {
@@ -99,6 +98,48 @@ impl Emu {
         self.pc += 2;
 
         op
+    }
+
+    fn execute(&mut self, op: u16) {
+        // Get each digit for easier matching
+        let digit1 = (op & 0xF000) >> 12;
+        let digit2 = (op & 0x0F00) >> 8;
+        let digit3 = (op & 0x00F0) >> 4;
+        let digit4 = op & 0x000F;
+
+        // Get "nibbles" for repeated use with instructions
+        let x = ((op & 0x0F00) >> 8) as usize; // Second nibble (register X)
+        let y = ((op & 0x00F0) >> 4) as usize; // Third nibble (register Y)
+        //
+        let n = (op & 0x000F) as u8; // Fourth nibble
+        let nn = (op & 0x00FF) as u8; // Lower byte
+        let nnn = op & 0x0FFF; // Lower 12 bits (address)
+
+        match (digit1, digit2, digit3, digit4) {
+            // NOP
+            (0, 0, 0, 0) => return,
+
+            // CLS
+            (0, 0, 0xE, 0) => self.screen = [false; SCREEN_WIDTH * SCREEN_HEIGHT],
+
+            // RET
+            (0, 0, 0xE, 0xE) => self.pc = self.pop(),
+
+            // JP addr
+            (1, _, _, _) => self.pc = nnn,
+
+            // CALL addr
+            (2, _, _, _) => {
+                // self.sp += 1;
+
+                self.push(self.pc);
+
+                self.pc = nnn;
+            }
+
+            // Failsafe
+            (_, _, _, _) => unimplemented!("Unimplemented opcode: {}", op),
+        }
     }
 
     // Tick Timers
