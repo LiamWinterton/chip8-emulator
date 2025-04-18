@@ -40,6 +40,8 @@ pub struct Emu {
     st: u8,
 }
 
+// The first 512 bytes were allocated to the original interpreter. Most programs as a result
+// started at 0x200.
 const START_ADDR: u16 = 0x200;
 
 impl Emu {
@@ -117,7 +119,7 @@ impl Emu {
 
         match (digit1, digit2, digit3, digit4) {
             // NOP
-            (0, 0, 0, 0) => return,
+            (0, 0, 0, 0) => (),
 
             // CLS
             (0, 0, 0xE, 0) => self.screen = [false; SCREEN_WIDTH * SCREEN_HEIGHT],
@@ -135,6 +137,68 @@ impl Emu {
                 self.push(self.pc);
 
                 self.pc = nnn;
+            }
+
+            // SE Vx, byte
+            (3, _, _, _) => {
+                if self.v_reg[x] == nn {
+                    self.pc += 2;
+                }
+            }
+
+            // SNE Vx, byte
+            (4, _, _, _) => {
+                if self.v_reg[x] != nn {
+                    self.pc += 2;
+                }
+            }
+
+            // SE Vx, Vy
+            (5, _, _, 0) => {
+                if self.v_reg[x] == self.v_reg[y] {
+                    self.pc += 2;
+                }
+            }
+
+            // LD Vx, byte
+            (6, _, _, _) => {
+                self.v_reg[x] = nn;
+            }
+
+            // ADD Vx, byte
+            (7, _, _, _) => {
+                // We do wrapping add here specifically to mimic the CPU (Rust will panic by
+                // default)
+                self.v_reg[x] = self.v_reg[x].wrapping_add(nn);
+            }
+
+            // LD Vx, Vy
+            (8, _, _, 0) => {
+                self.v_reg[x] = self.v_reg[y];
+            }
+
+            // OR Vx, Vy
+            (8, _, _, 1) => {
+                // The same as self.v_reg[x] = self.v_reg[x] | self.v_reg[y];
+                self.v_reg[x] |= self.v_reg[y];
+            }
+
+            // AND Vx, Vy
+            (8, _, _, 2) => {
+                self.v_reg[x] &= self.v_reg[y];
+            }
+
+            // XOR Vx, Vy
+            (8, _, _, 3) => {
+                self.v_reg[x] ^= self.v_reg[y];
+            }
+
+            // ADD Vx, Vy
+            (8, _, _, 4) => {
+                let (new_vx, carry) = self.v_reg[x].overflowing_add(self.v_reg[y]);
+
+                self.v_reg[x] = new_vx;
+                self.v_reg[0xF] = carry as u8;
             }
 
             // Failsafe
