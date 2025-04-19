@@ -112,7 +112,7 @@ impl Emu {
         // Get "nibbles" for repeated use with instructions
         let x = ((op & 0x0F00) >> 8) as usize; // Second nibble (register X)
         let y = ((op & 0x00F0) >> 4) as usize; // Third nibble (register Y)
-        //
+
         let n = (op & 0x000F) as u8; // Fourth nibble
         let nn = (op & 0x00FF) as u8; // Lower byte
         let nnn = op & 0x0FFF; // Lower 12 bits (address)
@@ -199,6 +199,38 @@ impl Emu {
 
                 self.v_reg[x] = new_vx;
                 self.v_reg[0xF] = carry as u8;
+            }
+
+            // SUB Vx, Vy
+            (8, _, _, 5) => {
+                let (new_vx, borrow) = self.v_reg[x].overflowing_sub(self.v_reg[y]);
+
+                self.v_reg[x] = new_vx;
+                self.v_reg[0xF] = !borrow as u8;
+            }
+
+            // SHR Vx {, Vy}
+            (8, _, _, 6) => {
+                let lsb = self.v_reg[x] & 1;
+
+                self.v_reg[x] >>= 1;
+                self.v_reg[0xF] = lsb;
+            }
+
+            // SUBN Vx, Vy
+            (8, _, _, 7) => {
+                let (new_vx, borrow) = self.v_reg[y].overflowing_sub(self.v_reg[x]);
+
+                self.v_reg[x] = new_vx;
+                self.v_reg[0xF] = !borrow as u8;
+            }
+
+            // SHL Vx {, Vy}
+            (8, _, _, 0xE) => {
+                let msb = (self.v_reg[x] >> 7) & 1;
+
+                self.v_reg[x] <<= 1;
+                self.v_reg[0xF] = msb;
             }
 
             // Failsafe
