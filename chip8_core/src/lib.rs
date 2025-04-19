@@ -1,3 +1,5 @@
+use rand::random;
+
 const FONTSET_SIZE: usize = 80;
 
 const FONTSET: [u8; FONTSET_SIZE] = [
@@ -231,6 +233,30 @@ impl Emu {
 
                 self.v_reg[x] <<= 1;
                 self.v_reg[0xF] = msb;
+            }
+
+            // SNE Vx, Vy
+            (9, _, _, 0) => {
+                if self.v_reg[x] != self.v_reg[y] {
+                    self.pc += 2;
+                }
+            }
+
+            // LD I, addr
+            (0xA, _, _, _) => {
+                self.i_reg = nnn;
+            }
+
+            // JP V0, addr
+            (0xB, _, _, _) => {
+                self.pc = (self.v_reg[0] as u16) + nnn;
+            }
+
+            // RND Vx, byte
+            (0xC, _, _, _) => {
+                let rnd: u8 = random();
+
+                self.v_reg[x] = rnd & nn;
             }
 
             // Failsafe
