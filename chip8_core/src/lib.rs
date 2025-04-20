@@ -81,6 +81,21 @@ impl Emu {
         self.ram[..FONTSET_SIZE].copy_from_slice(&FONTSET);
     }
 
+    pub fn load(&mut self, data: &[u8]) {
+        let start = START_ADDR as usize;
+        let end = start + data.len();
+
+        self.ram[start..end].copy_from_slice(data);
+    }
+
+    pub fn get_display(&self) -> &[bool] {
+        &self.screen
+    }
+
+    pub fn keypress(&mut self, idx: usize, pressed: bool) {
+        self.keys[idx] = pressed;
+    }
+
     // Runs the whole damn thing
     pub fn tick(&mut self) {
         // Fetch instruction to run
@@ -115,7 +130,6 @@ impl Emu {
         let x = ((op & 0x0F00) >> 8) as usize; // Second nibble (register X)
         let y = ((op & 0x00F0) >> 4) as usize; // Third nibble (register Y)
 
-        let n = (op & 0x000F) as u8; // Fourth nibble
         let nn = (op & 0x00FF) as u8; // Lower byte
         let nnn = op & 0x0FFF; // Lower 12 bits (address)
 
@@ -275,7 +289,7 @@ impl Emu {
                     for x_line in 0..8 {
                         // Use a mask to fetch current pixel's bit.
                         // Only flip if it's a 1
-                        if (pixels & (0b1000_000 >> x_line)) != 0 {
+                        if (pixels & (0b1000_0000 >> x_line)) != 0 {
                             let x = (x_coord + x_line) as usize % SCREEN_WIDTH;
                             let y = (y_coord + y_line) as usize % SCREEN_HEIGHT;
 
@@ -398,11 +412,13 @@ impl Emu {
         }
 
         // Decrement Sound Timber if it has a value + Play sound
-        if self.st == 1 {
-            // Play sound
-        }
+        if self.st > 0 {
+            if self.st == 1 {
+                // Play sound
+            }
 
-        self.st -= 1;
+            self.st -= 1;
+        }
     }
 
     // Adds the given u16 value to the top of the stack
