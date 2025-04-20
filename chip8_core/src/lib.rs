@@ -259,6 +259,132 @@ impl Emu {
                 self.v_reg[x] = rnd & nn;
             }
 
+            // DRAW
+            (0xD, _, _, _) => {
+                let x_coord = self.v_reg[x] as u16;
+                let y_coord = self.v_reg[y] as u16;
+
+                let num_rows = digit4 as u16;
+                let mut flipped: bool = false;
+
+                // Iterate over each row of our sprite
+                for y_line in 0..num_rows {
+                    let addr = self.i_reg + y_line as u16;
+                    let pixels = self.ram[addr as usize];
+
+                    for x_line in 0..8 {
+                        // Use a mask to fetch current pixel's bit.
+                        // Only flip if it's a 1
+                        if (pixels & (0b1000_000 >> x_line)) != 0 {
+                            let x = (x_coord + x_line) as usize % SCREEN_WIDTH;
+                            let y = (y_coord + y_line) as usize % SCREEN_HEIGHT;
+
+                            let idx = x + SCREEN_WIDTH * y;
+
+                            flipped |= self.screen[idx];
+
+                            self.screen[idx] ^= true;
+                        }
+                    }
+                }
+
+                // Populate VF register with flipped condition
+                self.v_reg[0xF] = flipped as u8;
+            }
+
+            // SKP Vx
+            (0xE, _, 9, 0xE) => {
+                let key_down = self.keys[self.v_reg[x] as usize];
+
+                if key_down {
+                    self.pc += 2;
+                }
+            }
+
+            // SKNP Vx
+            (0xE, _, 0xA, 1) => {
+                let key_down = self.keys[self.v_reg[x] as usize];
+
+                if !key_down {
+                    self.pc += 2;
+                }
+            }
+
+            // LD Vx, DT
+            (0xF, _, 0, 7) => {
+                self.v_reg[x] = self.dt;
+            }
+
+            // LD Vx, K
+            (0xF, _, 0, 0xA) => {
+                let mut pressed = false;
+
+                // Loop over pressed keys, wait until key is pressed
+                for i in 0..self.keys.len() {
+                    if self.keys[i] {
+                        self.v_reg[x] = i as u8;
+
+                        pressed = true;
+
+                        break;
+                    }
+                }
+
+                // Loop until we have a keypress
+                if !pressed {
+                    self.pc -= 2;
+                }
+            }
+
+            // LD DT, Vx
+            (0xF, _, 1, 5) => {
+                self.dt = self.v_reg[x];
+            }
+
+            // LD ST, Vx
+            (0xF, _, 1, 8) => {
+                self.st = self.v_reg[x];
+            }
+
+            // ADD I, Vx
+            (0xF, _, 1, 0xE) => {
+                self.i_reg = self.i_reg.wrapping_add(self.v_reg[x] as u16);
+            }
+
+            // LD F, Vx
+            (0xF, _, 2, 9) => {
+                self.i_reg = (self.v_reg[x] as u16) * 5;
+            }
+
+            // LD B, Vx
+            (0xF, _, 3, 3) => {
+                let vx = self.v_reg[x] as f32;
+
+                let hundreds = (vx / 100.0).floor() as u8;
+
+                let tens = ((vx / 100.0) % 10.0).floor() as u8;
+
+                let ones = (vx % 10.0) as u8;
+
+                self.ram[self.i_reg as usize] = hundreds;
+                self.ram[(self.i_reg + 1) as usize] = tens;
+                self.ram[(self.i_reg + 2) as usize] = ones;
+            }
+
+            // LD [I], Vx
+            (0xF, _, 5, 5) => {
+                for idx in 0..=x {
+                    self.ram[(self.i_reg as usize) + idx] = self.v_reg[idx];
+                }
+            }
+
+            // LD Vx, [I]
+            (0xF, _, 6, 5) => {
+                for idx in 0..=x {
+                    self.v_reg[idx] = self.ram[(self.i_reg as usize) + idx];
+                }
+            }
+
             // Failsafe
             (_, _, _, _) => unimplemented!("Unimplemented opcode: {}", op),
         }
